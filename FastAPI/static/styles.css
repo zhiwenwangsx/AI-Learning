@@ -1,0 +1,87 @@
+/* Calculator custom styles */
+.calculator {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+button {
+    position: relative;
+    overflow: hidden;
+}
+
+button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0.3s ease-out;
+    pointer-events: none;
+}
+
+button:active::after {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+}
+
+.result {
+    transition: all 0.3s ease;
+}
+
+.result.highlight {
+    background-color: #e8f5e9;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.3);
+}
+
+.theme-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 24px;
+}
+
+body.dark-theme {
+    background-color: #333;
+}
+
+body.dark-theme .calculator {
+    background-color: #444;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-theme h1,
+body.dark-theme label {
+    color: #eee;
+}
+
+body.dark-theme input {
+    background-color: #555;
+    color: #fff;
+    border-color: #666;
+}
+
+body.dark-theme .result {
+    background-color: #555;
+    color: #fff;
+}
+
+body.dark-theme .error {
+    color: #ff6b6b;
+} 

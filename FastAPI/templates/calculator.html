@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易计算器</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .calculator {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 300px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .operations {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+            min-height: 30px;
+        }
+        .error {
+            color: #d9534f;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .loading:after {
+            content: '.';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% {
+                color: rgba(0,0,0,0);
+                text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0);
+            }
+            40% {
+                color: #333;
+                text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0);
+            }
+            60% {
+                text-shadow: .25em 0 0 #333, .5em 0 0 rgba(0,0,0,0);
+            }
+            80%, 100% {
+                text-shadow: .25em 0 0 #333, .5em 0 0 #333;
+            }
+        }
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .switch-btn {
+            background-color: #7986cb;
+            margin: 0 5px;
+        }
+        .switch-btn.active {
+            background-color: #3f51b5;
+            font-weight: bold;
+        }
+        .time-info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle">🌙</button>
+    <div class="calculator">
+        <h1>简易计算器</h1>
+        <div class="input-group">
+            <label for="num1">第一个数字:</label>
+            <input type="number" id="num1" placeholder="输入第一个数字">
+        </div>
+        <div class="input-group">
+            <label for="num2">第二个数字:</label>
+            <input type="number" id="num2" placeholder="输入第二个数字">
+        </div>
+        <div class="operations">
+            <button onclick="calculate('add')">加法 (+)</button>
+            <button onclick="calculate('subtract')">减法 (-)</button>
+            <button onclick="calculate('multiply')">乘法 (×)</button>
+            <button onclick="calculate('divide')">除法 (÷)</button>
+        </div>
+        
+        <div class="mode-switch">
+            <button class="switch-btn active" id="syncMode">即时计算</button>
+            <button class="switch-btn" id="asyncMode">异步计算</button>
+        </div>
+        
+        <div class="result" id="result">
+            结果将显示在这里
+        </div>
+        <div class="loading" id="loading">计算中</div>
+        <div class="time-info" id="timeInfo"></div>
+    </div>
+
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-theme');
+            themeToggle.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
+        });
+        
+        // Mode switching
+        const syncModeBtn = document.getElementById('syncMode');
+        const asyncModeBtn = document.getElementById('asyncMode');
+        let isAsyncMode = false;
+        
+        syncModeBtn.addEventListener('click', () => {
+            isAsyncMode = false;
+            syncModeBtn.classList.add('active');
+            asyncModeBtn.classList.remove('active');
+        });
+        
+        asyncModeBtn.addEventListener('click', () => {
+            isAsyncMode = true;
+            asyncModeBtn.classList.add('active');
+            syncModeBtn.classList.remove('active');
+        });
+
+        async function calculate(operation) {
+            const num1 = document.getElementById('num1').value;
+            const num2 = document.getElementById('num2').value;
+            const resultElement = document.getElementById('result');
+            const loadingElement = document.getElementById('loading');
+            const timeInfoElement = document.getElementById('timeInfo');
+            
+            if (!num1 || !num2) {
+                resultElement.innerHTML = '<span class="error">请输入两个数字</span>';
+                return;
+            }
+            
+            // 清空之前的结果和时间信息
+            resultElement.textContent = '';
+            timeInfoElement.textContent = '';
+            
+            // 准备API端点
+            const endpoint = isAsyncMode ? '/async-calculate' : '/calculate';
+            
+            // 显示加载动画
+            if (isAsyncMode) {
+                loadingElement.style.display = 'block';
+                resultElement.textContent = '计算中...'; 
+            }
+            
+            try {
+                const startTime = performance.now();
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        num1: num1,
+                        num2: num2,
+                        operation: operation
+                    }),
+                });
+                
+                const data = await response.json();
+                
+                // 隐藏加载动画
+                loadingElement.style.display = 'none';
+                
+                if (data.error) {
+                    resultElement.innerHTML = `<span class="error">${data.error}</span>`;
+                } else {
+                    const operationSymbols = {
+                        'add': '+',
+                        'subtract': '-',
+                        'multiply': '×',
+                        'divide': '÷'
+                    };
+                    
+                    resultElement.textContent = 
+                        `${num1} ${operationSymbols[operation]} ${num2} = ${data.result}`;
+                    
+                    // 显示计算耗时信息
+                    if (isAsyncMode && data.time_taken) {
+                        timeInfoElement.textContent = `服务器处理用时: ${data.time_taken}`;
+                    } else {
+                        const endTime = performance.now();
+                        const timeTaken = ((endTime - startTime) / 1000).toFixed(2);
+                        timeInfoElement.textContent = `客户端处理用时: ${timeTaken} 秒`;
+                    }
+                    
+                    // 添加高亮效果
+                    resultElement.classList.add('highlight');
+                    setTimeout(() => {
+                        resultElement.classList.remove('highlight');
+                    }, 500);
+                }
+            } catch (error) {
+                loadingElement.style.display = 'none';
+                resultElement.innerHTML = `<span class="error">计算出错: ${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html> 
